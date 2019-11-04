@@ -1,0 +1,11 @@
+dist: xenial
+language: go
+go: '1.13.x'
+script:
+  - make test
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL http://git.io/goreleaser | bash
+    on:
+      tags: true
