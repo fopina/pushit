@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/fopina/pushit/services"
+	"github.com/fopina/pushit/services/slack"
 	"github.com/mitchellh/go-homedir"
 	toml "github.com/pelletier/go-toml"
 )
@@ -13,7 +14,7 @@ import (
 // Profile holds specific profile data (such as which Service to use and its settings)
 type Profile struct {
 	Service string
-	Param   map[string]string
+	Param   services.ServiceConfig
 }
 
 // Config holds the user configuration
@@ -39,7 +40,7 @@ func main() {
 
 	for _, v := range profiles {
 		if v.Service == "slack" {
-			err = services.SendSlackNotification(v.Param["url"], "Test Message from golangcode.com")
+			err = slack.PushIt("Test Message from golangcode.com", v.Param)
 			if err != nil {
 				log.Fatal(err)
 			}
