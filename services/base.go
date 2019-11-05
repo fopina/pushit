@@ -1,4 +1,4 @@
 package services
 
-// ServiceConfig holds service-specific parameters
-type ServiceConfig map[string]string
+// Config holds service-specific parameters
+type Config map[string]string

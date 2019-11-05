@@ -1,32 +1,41 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 
-	"github.com/fopina/pushit/services"
-	"github.com/fopina/pushit/services/slack"
+	"github.com/fopina/pushit/pushit"
 	"github.com/mitchellh/go-homedir"
 	toml "github.com/pelletier/go-toml"
 )
 
-// Profile holds specific profile data (such as which Service to use and its settings)
-type Profile struct {
-	Service string
-	Param   services.ServiceConfig
-}
-
 // Config holds the user configuration
-type Config map[string]Profile
+type Config map[string]pushit.Profile
 
 func configurationFile() string {
 	d, _ := homedir.Dir()
 	return filepath.Join(d, ".pushit.toml")
 }
 
+var version string = "DEV"
+var date string
+
 func main() {
-	config, err := toml.LoadFile(configurationFile())
+	versionPtr := flag.Bool("v", false, "display version")
+	profilePtr := flag.String("p", "default", "profile to use")
+	configurationPtr := flag.String("c", configurationFile(), "TOML configuration file")
+	flag.Parse()
+
+	if *versionPtr {
+		fmt.Println("Version: " + version + " (built on " + date + ")")
+		return
+	}
+
+	config, err := toml.LoadFile(*configurationPtr)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -38,12 +47,28 @@ func main() {
 		return
 	}
 
-	for _, v := range profiles {
-		if v.Service == "slack" {
-			err = slack.PushIt("Test Message from golangcode.com", v.Param)
-			if err != nil {
-				log.Fatal(err)
-			}
+	p, ok := profiles[*profilePtr]
+	if !ok {
+		log.Fatalf("Profile %v not found in %v", *profilePtr, *configurationPtr)
+	}
+
+	m := pushit.ServiceMap[p.Service]
+	if m == nil {
+		log.Fatalf("Profile %v has invalid service %v", *profilePtr, p.Service)
+	}
+
+	msg := flag.Arg(0)
+	if msg == "" {
+		// read from STDIN (for piped commands)
+		input, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatal(err)
 		}
+		msg = string(input)
+	}
+
+	err = m(msg, p.Param)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

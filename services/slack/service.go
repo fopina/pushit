@@ -20,7 +20,7 @@ type slackRequestBody struct {
 }
 
 // PushIt will push the message through a Slack webhook
-func PushIt(msg string, config services.ServiceConfig) error {
+func PushIt(msg string, config services.Config) error {
 	slackBody, _ := json.Marshal(slackRequestBody{
 		Text:      msg,
 		Channel:   config["channel"],
