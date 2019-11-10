@@ -2,15 +2,13 @@ default: pushtome
 
 profiles:
   pushtome:
-    service: slack
+    service: pushitbot
     params:
-      url: https://hooks.slack.com/services/T00000/B00000/XxXxXx
-      channel: "@fopina"
-      icon_emoji: sunny
+      token: 105e48ff92b92263f3397ed55f275a81
+      format: Markdown
   pushtoall:
     service: slack
     params:
       url: https://hooks.slack.com/services/T00000/B00000/XxXxXx
       channel: "#general"
       icon_emoji: tornado_cloud
-
