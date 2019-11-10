@@ -1,14 +1,19 @@
-default: pushtome
+default: pushitbot-demo
 
 profiles:
-  pushtome:
+  pushitbot-demo:
     service: pushitbot
     params:
       token: 105e48ff92b92263f3397ed55f275a81
       format: Markdown
-  pushtoall:
+  slack-demo:
     service: slack
     params:
       url: https://hooks.slack.com/services/T00000/B00000/XxXxXx
       channel: "#general"
       icon_emoji: tornado_cloud
+  telegram-demo:
+    service: telegram
+    params:
+      token: 999215559:BBGmxROBszzsQyLLLldyh_2jJrXzo0j-IIo
+      chat_id: 123456

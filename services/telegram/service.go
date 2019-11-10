@@ -1,4 +1,4 @@
-package pushitbot
+package telegram
 
 import (
 	"bytes"
@@ -11,26 +11,28 @@ import (
 	"github.com/fopina/pushit/services"
 )
 
-// http://fopina.github.io/tgbot-pushitbot/
 type requestBody struct {
-	Message string `json:"msg"`
-	Format  string `json:"format"`
+	Text   string `json:"text"`
+	ChatID string `json:"chat_id"`
 }
 
-// https://github.com/fopina/tgbot-pushitbot/blob/master/pushitbot.py#L105
 type replyBody struct {
 	OK          bool
-	Code        int
+	Code        int `json:"error_code"`
 	Description string
 }
 
 // PushIt will push the message through a Slack webhook
 func PushIt(msg string, config services.Config) error {
 	postBody, _ := json.Marshal(requestBody{
-		Message: msg,
-		Format:  config["format"],
+		Text:   msg,
+		ChatID: config["chat_id"],
 	})
-	req, err := http.NewRequest(http.MethodPost, "https://tgbots.skmobi.com/pushit/"+config["token"], bytes.NewBuffer(postBody))
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.telegram.org/bot"+config["token"]+"/sendMessage",
+		bytes.NewBuffer(postBody),
+	)
 	if err != nil {
 		return err
 	}
