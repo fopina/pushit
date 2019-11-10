@@ -5,22 +5,27 @@ import (
 	"bytes"
 	"container/list"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/fopina/pushit/pushit"
 	"github.com/mitchellh/go-homedir"
-	toml "github.com/pelletier/go-toml"
 	flag "github.com/spf13/pflag"
+	"gopkg.in/yaml.v2"
 )
 
 // Config holds the user configuration
-type Config map[string]pushit.Profile
+type Config struct {
+	Default  string
+	Profiles map[string]pushit.Profile
+}
 
 func configurationFile() string {
 	d, _ := homedir.Dir()
-	return filepath.Join(d, ".pushit.toml")
+	return filepath.Join(d, ".pushit.conf")
 }
 
 var version string = "DEV"
@@ -47,32 +52,34 @@ func main() {
 		return
 	}
 
-	config, err := toml.LoadFile(*configurationPtr)
+	yamlFile, err := ioutil.ReadFile(*configurationPtr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var config Config
+	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	if *profilePtr == "" {
-		defaultProfile, ok := config.Get("default").(string)
-		if !ok {
+		if config.Default == "" {
 			fmt.Println("Either specify a default profile in config or use the --profile option")
 			os.Exit(2)
 		}
-		*profilePtr = defaultProfile
+		*profilePtr = config.Default
 	}
 
-	var profiles Config
-	config.Delete("default")
-	err = config.Unmarshal(&profiles)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	p, ok := profiles[*profilePtr]
+	p, ok := config.Profiles[*profilePtr]
 	if !ok {
-		log.Fatalf("Profile %v not found in %v", *profilePtr, *configurationPtr)
+		log.Fatalf(
+			"Profile %v not found in %v. Available profiles: %v",
+			*profilePtr,
+			*configurationPtr,
+			strings.Join(keysFromMap(config.Profiles), ", "),
+		)
 	}
 
 	m := pushit.ServiceMap[p.Service]
@@ -94,7 +101,7 @@ func main() {
 			}
 			if *streamPtr {
 				if l != "" {
-					err = m(l, p.Param)
+					err = m(l, p.Params)
 					if err != nil {
 						log.Printf("ERR: %v", err)
 					}
@@ -118,7 +125,7 @@ func main() {
 				b.WriteString(e.Value.(string))
 				b.WriteString("\n")
 			}
-			err = m(b.String(), p.Param)
+			err = m(b.String(), p.Params)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -127,9 +134,20 @@ func main() {
 			log.Println(err)
 		}
 	} else {
-		err = m(msg, p.Param)
+		err = m(msg, p.Params)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+}
+
+func keysFromMap(x map[string]pushit.Profile) (keys []string) {
+	keys = make([]string, len(x))
+
+	i := 0
+	for k := range x {
+		keys[i] = k
+		i++
+	}
+	return keys
 }

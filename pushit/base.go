@@ -8,7 +8,7 @@ import (
 // Profile holds specific profile data (such as which Service to use and its settings)
 type Profile struct {
 	Service string
-	Param   services.Config
+	Params  services.Config
 }
 
 // ServiceMap maps service name (string) to the actual PushIt method
