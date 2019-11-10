@@ -3,6 +3,7 @@ package pushit
 import (
 	"github.com/fopina/pushit/services"
 	"github.com/fopina/pushit/services/pushitbot"
+	"github.com/fopina/pushit/services/requestbin"
 	"github.com/fopina/pushit/services/slack"
 	"github.com/fopina/pushit/services/telegram"
 )
@@ -15,7 +16,8 @@ type Profile struct {
 
 // ServiceMap maps service name (string) to the actual PushIt method
 var ServiceMap = map[string]func(string, services.Config) error{
-	"slack":     slack.PushIt,
-	"pushitbot": pushitbot.PushIt,
-	"telegram":  telegram.PushIt,
+	"slack":      slack.PushIt,
+	"pushitbot":  pushitbot.PushIt,
+	"telegram":   telegram.PushIt,
+	"requestbin": requestbin.PushIt,
 }

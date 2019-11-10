@@ -17,3 +17,8 @@ profiles:
     params:
       token: 999215559:BBGmxROBszzsQyLLLldyh_2jJrXzo0j-IIo
       chat_id: 123456
+  requestbin-demo:
+    service: requestbin
+    params:
+      url: https://en1opo1zkp99pt.x.pipedream.net/
+      whatever: youwant
