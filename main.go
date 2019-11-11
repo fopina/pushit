@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/fopina/pushit/pushit"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 )
@@ -31,13 +33,16 @@ func configurationFile() string {
 var version string = "DEV"
 var date string
 
+const repo = "fopina/pushit"
+
 func main() {
-	versionPtr := flag.BoolP("verbose", "v", false, "display version")
+	versionPtr := flag.BoolP("version", "v", false, "display version")
 	profilePtr := flag.StringP("profile", "p", "", "profile to use")
 	outputPtr := flag.BoolP("output", "o", false, "echo input - very useful when piping commands")
 	configurationPtr := flag.StringP("conf", "c", configurationFile(), "TOML configuration file")
 	streamPtr := flag.BoolP("stream", "s", false, "stream the output, sending each line in separate notification")
 	tailPtr := flag.IntP("lines", "l", 10, "number of lines of the input that will be pushed - ignored if --stream is used")
+	updatePtr := flag.BoolP("update", "u", false, "Auto-update pushit with latest release")
 	helpPtr := flag.BoolP("help", "h", false, "this")
 
 	flag.Parse()
@@ -49,6 +54,11 @@ func main() {
 
 	if *versionPtr {
 		fmt.Println("Version: " + version + " (built on " + date + ")")
+		return
+	}
+
+	if *updatePtr {
+		selfUpdate()
 		return
 	}
 
@@ -139,6 +149,22 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+func selfUpdate() error {
+	previous := semver.MustParse(version)
+	latest, err := selfupdate.UpdateSelf(previous, repo)
+	if err != nil {
+		return err
+	}
+
+	if previous.Equals(latest.Version) {
+		fmt.Println("Current binary is the latest version", version)
+	} else {
+		fmt.Println("Update successfully done to version", latest.Version)
+		fmt.Println("Release note:\n", latest.ReleaseNotes)
+	}
+	return nil
 }
 
 func keysFromMap(x map[string]pushit.Profile) (keys []string) {
