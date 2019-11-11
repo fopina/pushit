@@ -11,9 +11,7 @@ builds:
   goarch:
     - amd64
 archives:
-- replacements:
-    amd64: x86_64
-  format_overrides:
+- format_overrides:
     - goos: windows
       format: zip
   files:
