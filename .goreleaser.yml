@@ -10,6 +10,9 @@ builds:
     - windows
   goarch:
     - amd64
+    - arm
+  goarm:
+    - 7
 archives:
 - format_overrides:
     - goos: windows
