@@ -12,18 +12,13 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/fopina/pushit/cmd"
 	"github.com/fopina/pushit/pushit"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 )
-
-// Config holds the user configuration
-type Config struct {
-	Default  string
-	Profiles map[string]pushit.Profile
-}
 
 func configurationFile() string {
 	d, _ := homedir.Dir()
@@ -36,12 +31,15 @@ var date string
 const repo = "fopina/pushit"
 
 func main() {
+	options := cmd.CLIOptions{}
 	versionPtr := flag.BoolP("version", "v", false, "display version")
-	profilePtr := flag.StringP("profile", "p", "", "profile to use")
-	outputPtr := flag.BoolP("output", "o", false, "echo input - very useful when piping commands")
 	configurationPtr := flag.StringP("conf", "c", configurationFile(), "TOML configuration file")
-	streamPtr := flag.BoolP("stream", "s", false, "stream the output, sending each line in separate notification")
-	tailPtr := flag.IntP("lines", "l", 10, "number of lines of the input that will be pushed - ignored if --stream is used")
+	flag.StringVarP(&options.Profile, "profile", "p", "", "profile to use")
+	flag.BoolVarP(&options.Output, "output", "o", false, "echo input - very useful when piping commands")
+	flag.BoolVarP(&options.Stream, "stream", "s", false, "stream the output, sending each line in separate notification")
+	flag.IntVarP(&options.Tail, "lines", "l", 10, "number of lines of the input that will be pushed - ignored if --stream is used")
+	webPtr := flag.BoolP("web", "w", false, "Run as webserver, using raw POST data as message")
+	flag.StringVarP(&options.WebBind, "web-bind", "b", "127.0.0.1:8888", "Address and port to bind web server")
 	updatePtr := flag.BoolP("update", "u", false, "Auto-update pushit with latest release")
 	helpPtr := flag.BoolP("help", "h", false, "this")
 
@@ -64,37 +62,39 @@ func main() {
 
 	yamlFile, err := ioutil.ReadFile(*configurationPtr)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalln(err)
 	}
-	var config Config
-	err = yaml.Unmarshal(yamlFile, &config)
+
+	err = yaml.Unmarshal(yamlFile, &options.Config)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalln(err)
+	}
+
+	if *webPtr {
+		cmd.StartWeb(&options)
 		return
 	}
 
-	if *profilePtr == "" {
-		if config.Default == "" {
-			fmt.Println("Either specify a default profile in config or use the --profile option")
-			os.Exit(2)
+	if options.Profile == "" {
+		if options.Config.Default == "" {
+			log.Fatalln("Either specify a default profile in config or use the --profile option")
 		}
-		*profilePtr = config.Default
+		options.Profile = options.Config.Default
 	}
 
-	p, ok := config.Profiles[*profilePtr]
+	p, ok := options.Config.Profiles[options.Profile]
 	if !ok {
 		log.Fatalf(
-			"Profile %v not found in %v. Available profiles: %v",
-			*profilePtr,
+			"Profile %v not found in %v. Available profiles: %v\n",
+			options.Profile,
 			*configurationPtr,
-			strings.Join(keysFromMap(config.Profiles), ", "),
+			strings.Join(cmd.KeysFromMap(options.Config.Profiles), ", "),
 		)
 	}
 
 	m := pushit.ServiceMap[p.Service]
 	if m == nil {
-		log.Fatalf("Profile %v has invalid service %v", *profilePtr, p.Service)
+		log.Fatalf("Profile %v has invalid service %v", options.Profile, p.Service)
 	}
 
 	msg := flag.Arg(0)
@@ -106,10 +106,10 @@ func main() {
 		var l string
 		for scanner.Scan() {
 			l = scanner.Text()
-			if *outputPtr {
+			if options.Output {
 				fmt.Println(l)
 			}
-			if *streamPtr {
+			if options.Stream {
 				if l != "" {
 					err = m(l, p.Params)
 					if err != nil {
@@ -117,7 +117,7 @@ func main() {
 					}
 				}
 			} else {
-				if lineQueue.Len() < *tailPtr {
+				if lineQueue.Len() < options.Tail {
 					lineQueue.PushBack(l)
 				} else {
 					// CIRCULate it - move Front to Back and update value
@@ -129,7 +129,7 @@ func main() {
 			}
 		}
 
-		if !*streamPtr {
+		if !options.Stream {
 			var b bytes.Buffer
 			for e := lineQueue.Front(); e != nil; e = e.Next() {
 				b.WriteString(e.Value.(string))
@@ -165,15 +165,4 @@ func selfUpdate() error {
 		fmt.Println("Release note:\n", latest.ReleaseNotes)
 	}
 	return nil
-}
-
-func keysFromMap(x map[string]pushit.Profile) (keys []string) {
-	keys = make([]string, len(x))
-
-	i := 0
-	for k := range x {
-		keys[i] = k
-		i++
-	}
-	return keys
 }
