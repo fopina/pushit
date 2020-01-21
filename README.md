@@ -19,17 +19,21 @@ The pre-built binary has the `--update` flag to allow easier updates in the futu
 # Usage
 
 ```bash
-pushit -h
+$ pushit -h
 Usage of pushit:
-  -c, --conf string      TOML configuration file (default "~/.pushit.conf")
-  -h, --help             this
-  -l, --lines int        number of lines of the input that will be pushed - ignored if --stream is used (default 10)
-  -o, --output           echo input - very useful when piping commands
-  -p, --profile string   profile to use
-  -s, --stream           stream the output, sending each line in separate notification
-  -u, --update           Auto-update pushit with latest release
-  -v, --version          display version
+  -c, --conf string       configuration file (default "/Users/fopina/.pushit.conf")
+  -h, --help              this
+  -l, --lines int         number of lines of the input that will be pushed - ignored if --stream is used (default 10)
+  -o, --output            echo input - very useful when piping commands
+  -p, --profile string    profile to use
+  -s, --stream            stream the output, sending each line in separate notification
+  -u, --update            Auto-update pushit with latest release
+  -v, --version           display version
+  -w, --web               Run as webserver, using raw POST data as message
+  -b, --web-bind string   Address and port to bind web server (default "127.0.0.1:8888")
 ```
+
+## Configuration
 
 The configuration file is required but an example is available [here](https://github.com/fopina/pushit/blob/master/pushit.conf.example) in the repo.
 
@@ -50,6 +54,8 @@ profiles:
   * `service` is the notification service, check below for options
   * `params` is a mapping of options specific to the service, check below for options
 
+## CLI
+
 Pushing messages is now as simple as:
 
 ```bash
@@ -68,6 +74,38 @@ A flag worth highlighting is `--stream` that will post a message per line read f
 
 ```bash
 $ (echo one; sleep 1; echo done) | pushit --stream
+```
+
+## Web
+
+In some restricted (container?) environments it might be useful to have a single pushit installation (and configuration) available for multiple services/scripts to use it.
+
+`--web` starts a local webserver and anything POSTed to that URL will be pushed as if it was stdin.
+
+```
+$ pushit -w
+Up and running!
+
+Post raw data to http://127.0.0.1:8888/, as in:
+
+	curl http://127.0.0.1:8888/ -d 'testing 1 2 3'
+
+This will send that data as message using the default profile.
+To use a specific one, post to http://127.0.0.1:8888/PROFILE
+```
+
+## Docker
+
+`--web` mode is specially useful in a cluster of containers so that pushit does not need to be installed and configured in every image.
+
+An image is ready to be used in [the hub](https://hub.docker.com/r/fopina/pushit):
+
+```
+$ docker run --rm \
+             -v ~/.pushit.conf:/.pushit.conf:ro \
+             -p 8888:8888 \
+             fopina/pushit \
+             -w -b 0.0.0.0:8888
 ```
 
 ### Services

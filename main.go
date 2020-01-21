@@ -33,7 +33,7 @@ const repo = "fopina/pushit"
 func main() {
 	options := cmd.CLIOptions{}
 	versionPtr := flag.BoolP("version", "v", false, "display version")
-	configurationPtr := flag.StringP("conf", "c", configurationFile(), "TOML configuration file")
+	configurationPtr := flag.StringP("conf", "c", configurationFile(), "configuration file")
 	flag.StringVarP(&options.Profile, "profile", "p", "", "profile to use")
 	flag.BoolVarP(&options.Output, "output", "o", false, "echo input - very useful when piping commands")
 	flag.BoolVarP(&options.Stream, "stream", "s", false, "stream the output, sending each line in separate notification")
