@@ -1,3 +1,19 @@
+# DEPRECATED
+
+As this tool is very similar to [this one](https://github.com/projectdiscovery/notify), it has been deprecated and repository archived.
+
+The only service not supported directly by [notify](https://github.com/projectdiscovery/notify) is [pushitbot](https://fopina.github.io/tgbot-pushitbot/) but it can be used with their `custom` provider, eg:
+
+```
+custom:
+  - id: pushitmd
+    custom_webook_url: https://tgbots.skmobi.com/pushit/<TOKEN PROVIDED BY PUSHITBOT>
+    custom_method: POST
+    custom_format: 'format=Markdown&msg={{data}}'
+```
+
+Another feature that might be missed from this tool is the `--web` flag has been added in my [notify fork](https://github.com/fopina/notify/): plan is to clean it up and open a PR but fork has its own releases and docker image.
+
 # pushit
 
 Similar to [notify-push](https://github.com/fopina/notify-push) (in python), pushit is a CLI tool to push notifications straight to your phone.
